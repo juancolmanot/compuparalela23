@@ -10,7 +10,7 @@ Función para acceder al indice correcto de memoria de los
 arreglos usados para almacenar los valores de la grilla.    
 */
 
-static int N = 5;
+static int N = 10;
 
 #define IX(i, j) (i + (N + 2) * j)
 #define SWAP(x0, x) {   \
@@ -64,8 +64,6 @@ static void lin_solve(unsigned int n, boundary b, float* x, const float* x0, flo
         }
         set_bnd(n, b, x);
     }
-    printf("Diffusion\n");
-    print_grid(x);
 }
 
 static void diffuse(unsigned int n, boundary b, float* x, const float* x0, float diff, float dt)
@@ -109,42 +107,40 @@ static void advect(unsigned int n, boundary b, float* x, float* x0, const float*
         }
     }
     set_bnd(n, b, x);
-    printf("Advection \n");
-    print_grid(x);
 }
 
-static void project(unsigned int n, float* u, float* v, float* p, float* div) {
+static float total_mass(unsigned int n, boundary b, float* x) {
+
+    float mass = 0.f;
 
     for (unsigned int i = 1; i <= n; i++) {
         for (unsigned int j = 1; j <= n; j++) {
-            div[IX(i, j)] = -0.5f * (u[IX(i + 1, j)] - u[IX(i - 1, j)] + v[IX(i, j + 1)] - v[IX(i, j - 1)]) / n;
-            p[IX(i, j)] = 0;
+            mass += x[IX(i, j)] * 1.f * 1.f;
         }
     }
-    set_bnd(n, NONE, div);
-    set_bnd(n, NONE, p);
 
-    lin_solve(n, NONE, p, div, 1, 4);
-
-    for (unsigned int i = 1; i <= n; i++) {
-        for (unsigned int j = 1; j <= n; j++) {
-            u[IX(i, j)] -= 0.5f * n * (p[IX(i + 1, j)]- p[IX(i - 1, j)]);
-            v[IX(i, j)] -= 0.5f * n * (p[IX(i, j + 1)]- p[IX(i, j - 1)]);
-        }
-    }
-    set_bnd(n, VERTICAL, u);
-    set_bnd(n, VERTICAL, v);
+    return mass / ((float)n * (float)n);
 }
 
+void dens_step(unsigned int n, float* x, float* x0, float* u, float* v, float diff, float dt) {
+
+    // add_source(n, x, x0, dt);
+    // SWAP(x0, x);
+    diffuse(n, NONE, x, x0, diff, dt);
+    //SWAP(x0, x);
+    advect(n, NONE, x, x0, u, v, dt);
+}
 
 void main(void) {
     float* x_1;
     float* x_0;
     float* u_field;
     float* v_field;
+    float* curl_field;
 
     float dt = 0.1f;
     float diff = 0.0f;
+    float mass_tot = 0.f;
 
 
     int size = (N + 2) * (N + 2);
@@ -153,25 +149,26 @@ void main(void) {
     x_1 = (float*)malloc(size * sizeof(float));
     u_field = (float*)malloc(size * sizeof(float));
     v_field = (float*)malloc(size * sizeof(float));
+    curl_field = (float*)malloc(size * sizeof(float));
 
     srand((unsigned int) time(NULL));
 
     for (unsigned int i = 0; i <= N + 1; i++) {
         for (unsigned int j = 0; j <= N + 1; j++) {
             x_0[IX(i, j)] = ((float) rand())/ ((float) (RAND_MAX));
-            x_1[IX(i, j)] = 10.f * ((float) rand())/ ((float) (RAND_MAX));   
+            x_1[IX(i, j)] = 2.f * ((float) rand())/ ((float) (RAND_MAX));   
             u_field[IX(i, j)] = 2.f * ((float) rand())/ ((float) (RAND_MAX)) - 1.f;
             v_field[IX(i, j)] = 2.f * ((float) rand())/ ((float) (RAND_MAX)) - 1.f;
+            curl_field[IX(i, j)] = 0.f;
         }
     }
 
-    printf("==============================\n");
-    printf("Initial state\n");
-    print_grid(x_1);
+    mass_tot = total_mass(N, NONE, x_1);
+    printf("mass: %f\n", mass_tot);
 
     for (unsigned int i = 0; i <= 100; i++){
-        diffuse(N, NONE, x_1, x_0, diff, dt);
-        SWAP(x_0, x_1);
-        advect(N, NONE, x_1, x_0, u_field, v_field, dt);
+        dens_step(N, x_1, x_0, u_field, v_field, diff, dt);
+        mass_tot = total_mass(N, NONE, x_1);
+        printf("mass: %f\n", mass_tot);
     }
 }

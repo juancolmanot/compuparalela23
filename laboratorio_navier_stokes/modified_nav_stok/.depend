@@ -1,0 +1,5 @@
+compute_stats.o: compute_stats.c
+demo.o: demo.c solver.h wtime.h
+headless.o: headless.c wtime.h
+solver.o: solver.c solver.h
+wtime.o: wtime.c wtime.h
