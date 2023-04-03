@@ -1,6 +1,0 @@
--MM
-compute_stats.c
-demo.c
-headless.c
-solver.c
-wtime.c

@@ -176,9 +176,11 @@ static void one_step(void)
   ----------------------------------------------------------------------
 */
 
-int main(int argc, char** argv)
+int main(int argc, char** argv[])
 {   
     fp = fopen("../datafiles/test_headless.dat","w");
+
+    int n_data = atoi(argv[1])
 
     int i = 0;
 
@@ -216,7 +218,7 @@ int main(int argc, char** argv)
         exit(1);
     }
     clear_data();
-    for (i = 0; i < 64 * 32; i++) {
+    for (i = 0; i < 64 * n_data; i++) {
         one_step();
     }
     free_data();
